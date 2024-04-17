@@ -1,16 +1,15 @@
 import {inject, lifeCycleObserver, LifeCycleObserver} from '@loopback/core';
 import {juggler} from '@loopback/repository';
-import {ConfiguracionSeguridad} from '../config/seguridad.config';
 
 const config = {
   name: 'mongodb',
   connector: 'mongodb',
-  url: ConfiguracionSeguridad.mongodbConnectionString,
+  url: process.env.CONNECTION_STRING_MONGODB,
   host: 'localhost',
   port: 27017,
   user: '',
   password: '',
-  database: 'seguridad_ventas',
+  database: 'ventas_funeraria',
   useNewUrlParser: true
 };
 

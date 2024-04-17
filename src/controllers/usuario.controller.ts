@@ -301,7 +301,7 @@ export class UsuarioController {
         asuntoCorreo: ConfiguracionNotificaciones.asunto2fa,
       };
       let url = ConfiguracionNotificaciones.urlNotificaciones2fa;
-      this.servicioNotificaciones.EnviarNotificacion(datos, url);
+      //this.servicioNotificaciones.EnviarNotificacion(datos, url);
       return usuario;
     }
     return new HttpErrors[401]("Credenciales incorrectas.");
