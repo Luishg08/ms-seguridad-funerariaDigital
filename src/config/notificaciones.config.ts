@@ -5,4 +5,5 @@ export namespace ConfiguracionNotificaciones {
   export const urlNotificaciones2fa: string = "http://localhost:5187/Notificaciones/enviar-correo-2fa";
   export const urlNotificacionesSms: string = "http://localhost:5187/Notificaciones/enviar-sms";
   export const urlValidacionCorreoFrontend: string = "http://localhost:4200/seguridad/validar-hash-usuario-publico";
+  export const urlCorreoRecuperarContraseña: string = "http://localhost:4200/seguridad/correo-recuperar-contraseña";
 }

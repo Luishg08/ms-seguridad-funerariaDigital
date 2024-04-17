@@ -343,7 +343,7 @@ export class UsuarioController {
         numeroDestino: usuario.celular,
         contenidoMensaje: `Hola ${usuario.primerNombre}, su nueva clave es: ${nuevaClave}`,
       };
-      let url = ConfiguracionNotificaciones.urlNotificacionesSms;
+      let url = ConfiguracionNotificaciones.urlCorreoRecuperarContraseña;
       this.servicioNotificaciones.EnviarNotificacion(datos, url);
       return usuario;
     }
