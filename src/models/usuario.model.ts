@@ -2,7 +2,7 @@ import {belongsTo, Entity, hasMany, model, property} from '@loopback/repository'
 import {Login} from './login.model';
 import {Rol} from './rol.model';
 
-@model()
+@model({settings: {strict: false}})
 export class Usuario extends Entity {
   @property({
     type: 'string',

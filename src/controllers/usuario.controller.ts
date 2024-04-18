@@ -16,7 +16,7 @@ import {
 import {UserProfile} from '@loopback/security';
 import {ConfiguracionNotificaciones} from '../config/notificaciones.config';
 import {ConfiguracionSeguridad} from '../config/seguridad.config';
-import {Credenciales, CredencialesRecuperarClave, FactorDeAutenticacionPorCodigo, HashValidacionUsuario, Login, PermisosRolMenu, Usuario} from '../models';
+import {Credenciales, CredencialesAdministrador, CredencialesRecuperarClave, FactorDeAutenticacionPorCodigo, HashValidacionUsuario, Login, PermisosRolMenu, Usuario} from '../models';
 import {LoginRepository, UsuarioRepository} from '../repositories';
 import {AuthService, NotificacionesService, SeguridadUsuarioService} from '../services';
 
@@ -36,7 +36,7 @@ export class UsuarioController {
 
   @authenticate({
     strategy: "auth",
-    options: ["Usuario", "guardar"]
+    options: [ConfiguracionSeguridad.menuUsuarioId, "guardar"]
   })
   @post('/usuario')
   @response(200, {
@@ -68,6 +68,51 @@ export class UsuarioController {
     return this.usuarioRepository.create(usuario);
   }
 
+  @post('/usuario-administrador')
+  @response(200, {
+    description: 'Usuario model instance',
+    content: {'application/json': {schema: getModelSchemaRef(CredencialesAdministrador)}},
+  })
+  async creacionAdministrador(
+    @requestBody({
+      content: {
+        'application/json': {
+          schema: getModelSchemaRef(CredencialesAdministrador, {
+            title: 'NewAdmin',
+            exclude: ['_id'],
+          }),
+        },
+      },
+    })
+    usuario: Omit<CredencialesAdministrador, '_id'>,
+  ): Promise<Usuario> {
+    // crear la clave
+    let clave = this.servicioSeguridad.crearTextoAleatorio(10);
+    console.log(clave);
+    // cifrar la clave
+    let claveCifrada = this.servicioSeguridad.cifrarTexto(clave);
+    // asignar la clave cifrada al usuario
+    usuario.clave = claveCifrada;
+    usuario.hashValidacion = "No necesita";
+    usuario.estadoValidacion = true;
+    usuario.aceptado = true;
+    usuario.rolId = ConfiguracionSeguridad.rolAdministrador;
+
+
+    let url = ConfiguracionNotificaciones.urlNotificaciones2fa;
+
+    // Envío de clave
+    let datosCorreo = {
+      correoDestino: usuario.correo,
+      nombreDestino: usuario.primerNombre + " " + usuario.segundoNombre,
+      contenidoCorreo: `${clave}`,
+      asuntoCorreo: ConfiguracionNotificaciones.claveAsignada,
+    };
+    this.servicioNotificaciones.EnviarNotificacion(datosCorreo, url);
+    // enviar correo electrónico de notificación
+    return this.usuarioRepository.create(usuario);
+
+  }
 
   @post('/usuario-publico')
   @response(200, {
