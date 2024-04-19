@@ -14,11 +14,12 @@ import {
   response
 } from '@loopback/rest';
 import {UserProfile} from '@loopback/security';
+import {ConfiguracionLogicaNegocio} from '../config/logica-negocio.config';
 import {ConfiguracionNotificaciones} from '../config/notificaciones.config';
 import {ConfiguracionSeguridad} from '../config/seguridad.config';
 import {Credenciales, CredencialesAdministrador, CredencialesRecuperarClave, FactorDeAutenticacionPorCodigo, HashValidacionUsuario, Login, PermisosRolMenu, Usuario} from '../models';
 import {LoginRepository, UsuarioRepository} from '../repositories';
-import {AuthService, NotificacionesService, SeguridadUsuarioService} from '../services';
+import {AuthService, LogicaNegocioService, NotificacionesService, SeguridadUsuarioService} from '../services';
 
 export class UsuarioController {
   constructor(
@@ -31,7 +32,9 @@ export class UsuarioController {
     @service(AuthService)
     private servicioAuth: AuthService,
     @service(NotificacionesService)
-    public servicioNotificaciones: NotificacionesService
+    public servicioNotificaciones: NotificacionesService,
+    @service(LogicaNegocioService)
+    public servicioLogicaNegocio: LogicaNegocioService
   ) { }
 
   @authenticate({
@@ -342,11 +345,15 @@ export class UsuarioController {
       let datos = {
         correoDestino: usuario.correo,
         nombreDestino: usuario.primerNombre + " " + usuario.segundoNombre,
-        contenidoCorreo: `Su código de segundo factor de autenticación es: ${codigo2fa}`,
+        contenidoCorreo: `${codigo2fa}`,
         asuntoCorreo: ConfiguracionNotificaciones.asunto2fa,
       };
       let url = ConfiguracionNotificaciones.urlNotificaciones2fa;
-      //this.servicioNotificaciones.EnviarNotificacion(datos, url);
+      this.servicioNotificaciones.EnviarNotificacion(datos, url);
+      let datosUsuario = {
+        idUsuario: usuario._id,
+      }
+      this.servicioLogicaNegocio.EnviarPeticionPOSTALogicaNegocio(datosUsuario, ConfiguracionLogicaNegocio.verificarPlanActivoDeUnUsuario);
       return usuario;
     }
     return new HttpErrors[401]("Credenciales incorrectas.");
