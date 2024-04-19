@@ -390,10 +390,13 @@ export class UsuarioController {
       usuario.clave = claveCifrada;
       this.usuarioRepository.updateById(usuario._id, usuario);
 
-      // notificar al usuario vía sms
+      // notificar al usuario vía correo
       let datos = {
-        numeroDestino: usuario.celular,
-        contenidoMensaje: `Hola ${usuario.primerNombre}, su nueva clave es: ${nuevaClave}`,
+        correoDestino: usuario.correo,
+        usuario: usuario.primerNombre + " " + usuario.primerApellido,
+        contraseña: nuevaClave,
+        nombreDestino: usuario.primerNombre + " " + usuario.segundoNombre,
+        asuntoCorreo: ConfiguracionNotificaciones.claveAsignada
       };
       let url = ConfiguracionNotificaciones.urlCorreoRecuperarContraseña;
       this.servicioNotificaciones.EnviarNotificacion(datos, url);
