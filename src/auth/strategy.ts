@@ -34,6 +34,9 @@ export class AuthStrategy implements AuthenticationStrategy {
       let idMenu: string = this.metadata[0].options![0];
       let accion: string = this.metadata[0].options![1];
       console.log(this.metadata);
+
+
+
       try {
         let res = await this.servicioAuth.VerificarPermisoDeUsuarioPorRol(idRol, idMenu, accion);
         return res;
