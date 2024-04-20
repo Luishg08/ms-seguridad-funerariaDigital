@@ -17,7 +17,7 @@ import {UserProfile} from '@loopback/security';
 import {ConfiguracionLogicaNegocio} from '../config/logica-negocio.config';
 import {ConfiguracionNotificaciones} from '../config/notificaciones.config';
 import {ConfiguracionSeguridad} from '../config/seguridad.config';
-import {Credenciales, CredencialesAdministrador, CredencialesRecuperarClave, FactorDeAutenticacionPorCodigo, HashValidacionUsuario, Login, PermisosRolMenu, Usuario} from '../models';
+import {Credenciales, CredencialesAdministrador, CredencialesPqrs, CredencialesRecuperarClave, FactorDeAutenticacionPorCodigo, HashValidacionUsuario, Login, PermisosRolMenu, Usuario} from '../models';
 import {LoginRepository, UsuarioRepository} from '../repositories';
 import {AuthService, LogicaNegocioService, NotificacionesService, SeguridadUsuarioService} from '../services';
 
@@ -471,5 +471,51 @@ export class UsuarioController {
       }
     }
     return new HttpErrors[401]("Código de 2fa inválido para el usuario definido.");
+  }
+  @post('/enviar-PQRS')
+  @response(200, {
+    description: "Identificar un usuario por correo y clave",
+    content: {'application/json': {schema: getModelSchemaRef(CredencialesPqrs)}}
+  })
+  async enviarPQRS(
+    @requestBody(
+      {
+        content: {
+          'application/json': {
+            schema: getModelSchemaRef(CredencialesPqrs)
+          }
+        }
+      }
+    )
+    credenciales: CredencialesPqrs
+  ): Promise<any> {
+    let correoAdmin = ""
+    switch (credenciales.tipoMensaje) {
+      case "Petición":
+        correoAdmin = ConfiguracionNotificaciones.correoAdminPetición;
+        break;
+      case "Queja":
+        correoAdmin = ConfiguracionNotificaciones.correoAdminQueja;
+        break;
+      case "Reclamo":
+        correoAdmin = ConfiguracionNotificaciones.correoAdminReclamo;
+        break;
+      case "Sugerencia":
+        correoAdmin = ConfiguracionNotificaciones.correoAdminSugerencia;
+        break;
+    }
+    //Enviar correo al administrador
+    let url = ConfiguracionNotificaciones.urlNotificacionesAgradecimientoPQRS;
+    let datos = {
+      correoDestino: credenciales.correoPersona,
+      nombreDestino: "Administrador",
+      asuntoCorreo: credenciales.tipoMensaje,
+      contenidoMensaje: credenciales.contenido,
+      usuario: credenciales.nombrePersona,
+      tipoPQRS: credenciales.tipoMensaje
+    };
+    this.servicioNotificaciones.EnviarNotificacion(datos, url)
+
+    //Implementar código para enviar el correo al administrador correspondiente
   }
 }
