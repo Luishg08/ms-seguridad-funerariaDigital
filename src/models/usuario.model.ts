@@ -61,6 +61,11 @@ export class Usuario extends Entity {
   estadoValidacion?: boolean;
 
   @property({
+    type: 'string',
+  })
+  foto?: string;
+
+  @property({
     type: 'boolean',
   })
   aceptado?: boolean;
