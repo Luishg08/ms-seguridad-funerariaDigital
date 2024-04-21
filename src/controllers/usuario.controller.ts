@@ -14,11 +14,12 @@ import {
   response
 } from '@loopback/rest';
 import {UserProfile} from '@loopback/security';
+import {ConfiguracionLogicaNegocio} from '../config/logica-negocio.config';
 import {ConfiguracionNotificaciones} from '../config/notificaciones.config';
 import {ConfiguracionSeguridad} from '../config/seguridad.config';
-import {Credenciales, CredencialesRecuperarClave, FactorDeAutenticacionPorCodigo, HashValidacionUsuario, Login, PermisosRolMenu, Usuario} from '../models';
+import {Credenciales, CredencialesAdministrador, CredencialesPqrs, CredencialesRecuperarClave, FactorDeAutenticacionPorCodigo, HashValidacionUsuario, Login, PermisosRolMenu, Usuario} from '../models';
 import {LoginRepository, UsuarioRepository} from '../repositories';
-import {AuthService, NotificacionesService, SeguridadUsuarioService} from '../services';
+import {AuthService, LogicaNegocioService, NotificacionesService, SeguridadUsuarioService} from '../services';
 
 export class UsuarioController {
   constructor(
@@ -31,12 +32,14 @@ export class UsuarioController {
     @service(AuthService)
     private servicioAuth: AuthService,
     @service(NotificacionesService)
-    public servicioNotificaciones: NotificacionesService
+    public servicioNotificaciones: NotificacionesService,
+    @service(LogicaNegocioService)
+    public servicioLogicaNegocio: LogicaNegocioService
   ) { }
 
   @authenticate({
     strategy: "auth",
-    options: ["Usuario", "guardar"]
+    options: [ConfiguracionSeguridad.menuUsuarioId, "guardar"]
   })
   @post('/usuario')
   @response(200, {
@@ -68,6 +71,51 @@ export class UsuarioController {
     return this.usuarioRepository.create(usuario);
   }
 
+  @post('/usuario-administrador')
+  @response(200, {
+    description: 'Usuario model instance',
+    content: {'application/json': {schema: getModelSchemaRef(CredencialesAdministrador)}},
+  })
+  async creacionAdministrador(
+    @requestBody({
+      content: {
+        'application/json': {
+          schema: getModelSchemaRef(CredencialesAdministrador, {
+            title: 'NewAdmin',
+            exclude: ['_id'],
+          }),
+        },
+      },
+    })
+    usuario: Omit<CredencialesAdministrador, '_id'>,
+  ): Promise<Usuario> {
+    // crear la clave
+    let clave = this.servicioSeguridad.crearTextoAleatorio(10);
+    console.log(clave);
+    // cifrar la clave
+    let claveCifrada = this.servicioSeguridad.cifrarTexto(clave);
+    // asignar la clave cifrada al usuario
+    usuario.clave = claveCifrada;
+    usuario.hashValidacion = "No necesita";
+    usuario.estadoValidacion = true;
+    usuario.aceptado = true;
+    usuario.rolId = ConfiguracionSeguridad.rolAdministrador;
+
+
+    let url = ConfiguracionNotificaciones.urlNotificaciones2fa;
+
+    // Envío de clave
+    let datosCorreo = {
+      correoDestino: usuario.correo,
+      nombreDestino: usuario.primerNombre + " " + usuario.segundoNombre,
+      contenidoCorreo: `${clave}`,
+      asuntoCorreo: ConfiguracionNotificaciones.claveAsignada,
+    };
+    this.servicioNotificaciones.EnviarNotificacion(datosCorreo, url);
+    // enviar correo electrónico de notificación
+    return this.usuarioRepository.create(usuario);
+
+  }
 
   @post('/usuario-publico')
   @response(200, {
@@ -297,11 +345,15 @@ export class UsuarioController {
       let datos = {
         correoDestino: usuario.correo,
         nombreDestino: usuario.primerNombre + " " + usuario.segundoNombre,
-        contenidoCorreo: `Su código de segundo factor de autenticación es: ${codigo2fa}`,
+        contenidoCorreo: `${codigo2fa}`,
         asuntoCorreo: ConfiguracionNotificaciones.asunto2fa,
       };
       let url = ConfiguracionNotificaciones.urlNotificaciones2fa;
-      //this.servicioNotificaciones.EnviarNotificacion(datos, url);
+      this.servicioNotificaciones.EnviarNotificacion(datos, url);
+      let datosUsuario = {
+        idUsuario: usuario._id,
+      }
+      this.servicioLogicaNegocio.EnviarPeticionPOSTALogicaNegocio(datosUsuario, ConfiguracionLogicaNegocio.verificarPlanActivoDeUnUsuario);
       return usuario;
     }
     return new HttpErrors[401]("Credenciales incorrectas.");
@@ -338,12 +390,15 @@ export class UsuarioController {
       usuario.clave = claveCifrada;
       this.usuarioRepository.updateById(usuario._id, usuario);
 
-      // notificar al usuario vía sms
+      // notificar al usuario vía correo
       let datos = {
-        numeroDestino: usuario.celular,
-        contenidoMensaje: `Hola ${usuario.primerNombre}, su nueva clave es: ${nuevaClave}`,
+        correoDestino: usuario.correo,
+        usuario: usuario.primerNombre + " " + usuario.primerApellido,
+        contraseña: nuevaClave,
+        nombreDestino: usuario.primerNombre + " " + usuario.segundoNombre,
+        asuntoCorreo: ConfiguracionNotificaciones.claveAsignada
       };
-      let url = ConfiguracionNotificaciones.urlNotificacionesSms;
+      let url = ConfiguracionNotificaciones.urlCorreoRecuperarContraseña;
       this.servicioNotificaciones.EnviarNotificacion(datos, url);
       return usuario;
     }
@@ -416,5 +471,51 @@ export class UsuarioController {
       }
     }
     return new HttpErrors[401]("Código de 2fa inválido para el usuario definido.");
+  }
+  @post('/enviar-PQRS')
+  @response(200, {
+    description: "Identificar un usuario por correo y clave",
+    content: {'application/json': {schema: getModelSchemaRef(CredencialesPqrs)}}
+  })
+  async enviarPQRS(
+    @requestBody(
+      {
+        content: {
+          'application/json': {
+            schema: getModelSchemaRef(CredencialesPqrs)
+          }
+        }
+      }
+    )
+    credenciales: CredencialesPqrs
+  ): Promise<any> {
+    let correoAdmin = ""
+    switch (credenciales.tipoMensaje) {
+      case "Petición":
+        correoAdmin = ConfiguracionNotificaciones.correoAdminPetición;
+        break;
+      case "Queja":
+        correoAdmin = ConfiguracionNotificaciones.correoAdminQueja;
+        break;
+      case "Reclamo":
+        correoAdmin = ConfiguracionNotificaciones.correoAdminReclamo;
+        break;
+      case "Sugerencia":
+        correoAdmin = ConfiguracionNotificaciones.correoAdminSugerencia;
+        break;
+    }
+    //Enviar correo al administrador
+    let url = ConfiguracionNotificaciones.urlNotificacionesAgradecimientoPQRS;
+    let datos = {
+      correoDestino: credenciales.correoPersona,
+      nombreDestino: "Administrador",
+      asuntoCorreo: credenciales.tipoMensaje,
+      contenidoMensaje: credenciales.contenido,
+      usuario: credenciales.nombrePersona,
+      tipoPQRS: credenciales.tipoMensaje
+    };
+    this.servicioNotificaciones.EnviarNotificacion(datos, url)
+
+    //Implementar código para enviar el correo al administrador correspondiente
   }
 }
