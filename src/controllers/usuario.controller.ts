@@ -156,14 +156,14 @@ export class UsuarioController {
     usuario.rolId = ConfiguracionSeguridad.rolUsuarioPublico;
 
     // Notificación del hash
-    let enlace = `<a href="${ConfiguracionNotificaciones.urlValidacionCorreoFrontend}/${hash}" target='_blank'>Validar</a>`;
+    let enlace = `<a href="${ConfiguracionNotificaciones.urlNotificaciones2fa}/${hash}" target='_blank'>Validar</a>`;
     let datos = {
       correoDestino: usuario.correo,
       nombreDestino: usuario.primerNombre + " " + usuario.segundoNombre,
       contenidoCorreo: `${enlace}`,
       asuntoCorreo: ConfiguracionNotificaciones.asunto2fa,
     };
-    let url = ConfiguracionNotificaciones.urlValidacionCorreoFrontend;
+    let url = ConfiguracionNotificaciones.urlNotificaciones2fa;
     this.servicioNotificaciones.EnviarNotificacion(datos, enlace);
 
     // Envío de clave
