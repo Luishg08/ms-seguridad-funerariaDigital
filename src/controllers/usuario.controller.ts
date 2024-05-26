@@ -71,6 +71,11 @@ export class UsuarioController {
     return this.usuarioRepository.create(usuario);
   }
 
+  @authenticate({
+    strategy: "auth",
+    options: [ConfiguracionSeguridad.menuUsuarioId, "guardar"]
+  })
+
   @post('/usuario-administrador')
   @response(200, {
     description: 'Usuario model instance',
@@ -117,6 +122,7 @@ export class UsuarioController {
 
   }
 
+
   @post('/usuario-publico')
   @response(200, {
     description: 'Usuario model instance',
@@ -149,7 +155,6 @@ export class UsuarioController {
     usuario.aceptado = false;
     usuario.rolId = ConfiguracionSeguridad.rolUsuarioPublico;
 
-
     // Notificación del hash
     let enlace = `<a href="${ConfiguracionNotificaciones.urlValidacionCorreoFrontend}/${hash}" target='_blank'>Validar</a>`;
     let datos = {
@@ -169,11 +174,11 @@ export class UsuarioController {
       asuntoCorreo: ConfiguracionNotificaciones.claveAsignada,
     };
     this.servicioNotificaciones.EnviarNotificacion(datosCorreo, url);
+
     // enviar correo electrónico de notificación
     return this.usuarioRepository.create(usuario);
 
   }
-
 
   @post('/validar-hash-usuario')
   @response(200, {
