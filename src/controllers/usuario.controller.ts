@@ -155,8 +155,8 @@ export class UsuarioController {
     let datos = {
       correoDestino: usuario.correo,
       nombreDestino: usuario.primerNombre + " " + usuario.segundoNombre,
-      contenidoCorreo: `Por favor visite este link para validar su correo: ${enlace}`,
-      asuntoCorreo: ConfiguracionNotificaciones.asuntoVerificacionCorreo,
+      contenidoCorreo: `${hash}`,
+      asuntoCorreo: ConfiguracionNotificaciones.asunto2fa,
     };
     let url = ConfiguracionNotificaciones.urlNotificaciones2fa;
     this.servicioNotificaciones.EnviarNotificacion(datos, url);
