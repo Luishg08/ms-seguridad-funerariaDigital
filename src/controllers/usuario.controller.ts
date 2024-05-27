@@ -160,11 +160,11 @@ export class UsuarioController {
     let datos = {
       correoDestino: usuario.correo,
       nombreDestino: usuario.primerNombre + " " + usuario.segundoNombre,
-      contenidoCorreo: `${enlace}`,
+      contenidoCorreo: `${ConfiguracionNotificaciones.urlValidacionCorreoFrontend + "/" + hash}`,
       asuntoCorreo: ConfiguracionNotificaciones.asunto2fa,
     };
     let url = ConfiguracionNotificaciones.urlNotificaciones2fa;
-    this.servicioNotificaciones.EnviarNotificacion(datos, enlace);
+    this.servicioNotificaciones.EnviarNotificacion(datos, url);
 
     // Envío de clave
     let datosCorreo = {
