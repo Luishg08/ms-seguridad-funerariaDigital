@@ -119,4 +119,18 @@ export class SeguridadUsuarioService {
     );
     return menu;
   }
+
+  async ObtenerUsuarioPorCorreo(correo: string): Promise<Usuario | null> {
+    try{
+      let usuario = await this.repositorioUsuario.findOne({
+        where: {
+          correo: correo
+        }
+      });
+      return usuario;
+    }
+    catch(error){
+      return null;
+    }
+  }
 }

@@ -156,24 +156,24 @@ export class UsuarioController {
     usuario.rolId = ConfiguracionSeguridad.rolUsuarioPublico;
 
     // Notificación del hash
-    let enlace = `<a href="${ConfiguracionNotificaciones.urlNotificaciones2fa}/${hash}" target='_blank'>Validar</a>`;
     let datos = {
       correoDestino: usuario.correo,
       nombreDestino: usuario.primerNombre + " " + usuario.segundoNombre,
       contenidoCorreo: `${ConfiguracionNotificaciones.urlValidacionCorreoFrontend + "/" + hash}`,
       asuntoCorreo: ConfiguracionNotificaciones.asunto2fa,
     };
-    let url = ConfiguracionNotificaciones.urlNotificaciones2fa;
+    let url = ConfiguracionNotificaciones.urlValidarCorreo;
     this.servicioNotificaciones.EnviarNotificacion(datos, url);
 
     // Envío de clave
     let datosCorreo = {
       correoDestino: usuario.correo,
       nombreDestino: usuario.primerNombre + " " + usuario.segundoNombre,
-      contenidoCorreo: `Su clave asignada es: ${clave}`,
+      contenidoCorreo: `${clave}`,
       asuntoCorreo: ConfiguracionNotificaciones.claveAsignada,
     };
-    this.servicioNotificaciones.EnviarNotificacion(datosCorreo, url);
+    let url1 = ConfiguracionNotificaciones.urlNotificacionesClaveAsignada;
+    this.servicioNotificaciones.EnviarNotificacion(datosCorreo, url1);
 
     // enviar correo electrónico de notificación
     return this.usuarioRepository.create(usuario);
@@ -522,5 +522,31 @@ export class UsuarioController {
     this.servicioNotificaciones.EnviarNotificacion(datos, url)
 
     //Implementar código para enviar el correo al administrador correspondiente
+  }
+
+  @post('/obtener-usuario-con-correo')
+  @response(200, {
+    description: "Obtener un usuario por correo",
+    content: {'application/json': {schema: getModelSchemaRef(CredencialesRecuperarClave)}}
+  })
+  async ObtenerUsuarioConCorreo(
+    @requestBody(
+      {
+        content: {
+          'application/json': {
+            schema: getModelSchemaRef(CredencialesRecuperarClave)
+          }
+        }
+      }
+    )
+    credenciales: CredencialesRecuperarClave
+  ): Promise<any> {
+    let usuario = await this.servicioSeguridad.ObtenerUsuarioPorCorreo(credenciales.correo);
+    if (usuario) {
+      return usuario;
+    }
+    else {
+      return null
+    }
   }
 }

@@ -11,4 +11,6 @@ export namespace ConfiguracionNotificaciones {
   export const correoAdminReclamo: string = "admin1134@funerariaDigital.com"
   export const correoAdminSugerencia: string = "admin12374@funerariaDigital.com"
   export const urlNotificacionesAgradecimientoPQRS: string = "http://localhost:5041/Notificaciones/correo-agradecimiento-pqrs";
+  export const urlValidarCorreo: string = "http://localhost:5041/Notificaciones/correo-verificacion";
+  export const urlNotificacionesClaveAsignada: string = "http://localhost:5041/Notificaciones/correo-enviar-clave-asignada";
 }
